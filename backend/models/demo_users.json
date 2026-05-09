@@ -1,0 +1,26 @@
+[
+  {
+    "id": "22222222-2222-2222-2222-222222222201",
+    "email": "tech@demo.xai",
+    "name": "Tech Enthusiast",
+    "password": "Demo1234!",
+    "favourite_category": "Electronics",
+    "description": "Loves the latest gadgets, always researching tech reviews."
+  },
+  {
+    "id": "22222222-2222-2222-2222-222222222202",
+    "email": "books@demo.xai",
+    "name": "Book Lover",
+    "password": "Demo1234!",
+    "favourite_category": "Books",
+    "description": "Voracious reader across non-fiction, productivity, and science."
+  },
+  {
+    "id": "22222222-2222-2222-2222-222222222203",
+    "email": "fashion@demo.xai",
+    "name": "Fashion Fan",
+    "password": "Demo1234!",
+    "favourite_category": "Clothing",
+    "description": "Style-conscious shopper who values quality and brand reputation."
+  }
+]

@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+!.env.example
+
+# Model pickle files
+*.pkl
+
+# Model artifacts (generated locally, uploaded manually to Droplet)
+backend/models/saved_model.pkl
+backend/models/shap_background.pkl
+backend/models/feature_columns.pkl
+
+# Keep demo data (committed to git)
+!backend/models/demo_products.json
+!backend/models/demo_users.json
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Jupyter (training notebooks, if any)
+.ipynb_checkpoints/
