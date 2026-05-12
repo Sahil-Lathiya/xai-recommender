@@ -51,6 +51,22 @@ export const recordInteraction = (userId, productId, actionType, rating = null) 
     })
     .then((r) => r.data)
 
+/**
+ * Fire-and-forget interaction tracker.
+ * Never throws — safe to call without await from any component.
+ */
+export const trackInteraction = (userId, productId, actionType, token = null) => {
+  if (!userId || !productId) return
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  api
+    .post(
+      '/api/v1/users/interaction',
+      { user_id: userId, product_id: productId, action_type: actionType },
+      { headers },
+    )
+    .catch((err) => console.warn('[trackInteraction]', actionType, err?.message))
+}
+
 export const getHealth = () => api.get('/health').then((r) => r.data)
 
 export const loginUser = (email, password) =>

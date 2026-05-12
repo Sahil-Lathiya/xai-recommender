@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     SHAP_BACKGROUND_PATH: str = "./models/shap_background.pkl"
     FEATURE_COLUMNS_PATH: str = "./models/feature_columns.pkl"
 
+    # Amazon / Scavio
+    SCAVIO_API_KEY: str = ""
+    AMAZON_ASSOCIATE_ID: str = "xairecommende-21"
+
     @field_validator("SUPABASE_DB_URL")
     @classmethod
     def validate_db_url(cls, v: str) -> str:
@@ -49,13 +53,18 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         origins = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        # Always allow the production domain
+        origins.extend([
+            "https://xairecommender.me",
+            "https://www.xairecommender.me",
+        ])
         if self.ENVIRONMENT == "development":
             origins.extend([
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://127.0.0.1:5173",
             ])
-        return origins
+        return list(dict.fromkeys(origins))  # deduplicate, preserve order
 
     @property
     def is_development(self) -> bool:

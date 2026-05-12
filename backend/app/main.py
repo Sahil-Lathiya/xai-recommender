@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import time
@@ -5,6 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 import psutil
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -53,10 +55,19 @@ async def lifespan(app: FastAPI):
     app.state.total_llm_tokens = 0
     app.state.total_llm_calls = 0
 
+    # Product fetcher — run once at startup, then every 6 hours
+    from app.services.product_fetcher import fetch_and_upsert_products
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(fetch_and_upsert_products, "interval", hours=6, id="product_fetch")
+    scheduler.start()
+    asyncio.create_task(fetch_and_upsert_products())
+
     logger.info("═══ XAI Recommender API ready on port %d ═══", settings.PORT)
 
     yield
 
+    scheduler.shutdown(wait=False)
     logger.info("═══ XAI Recommender API shutting down ═══")
 
 

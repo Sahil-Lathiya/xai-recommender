@@ -140,10 +140,17 @@ async def get_recommendations(
         )
 
         shap_result = xai_engine.explain(feature_vector, str(rec_id))
-        confidence = _score_to_confidence(score, rank)
 
-        # Use product-specific card reason — guaranteed unique per product
-        top_reason = _card_reason(product_data, user_stats, is_new_user)
+        # Cold-start: fixed confidence + trending reason (< 5 interactions)
+        if is_new_user:
+            confidence = 50
+            top_reason = (
+                f"Trending — {product_data.get('rating', 0)}★ rated by "
+                f"{int(product_data.get('review_count', 0)):,} buyers"
+            )
+        else:
+            confidence = _score_to_confidence(score, rank)
+            top_reason = _card_reason(product_data, user_stats, is_new_user)
 
         try:
             existing = await db.get(Recommendation, rec_id)

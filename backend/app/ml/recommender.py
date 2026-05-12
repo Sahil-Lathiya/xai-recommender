@@ -104,7 +104,7 @@ class ModelManager:
             recommendation_cache[cache_key] = payload
             return payload
 
-        is_new_user = user_stats["user_review_count"] == 0
+        is_new_user = user_stats["user_review_count"] < 5
 
         if is_new_user:
             results = self._trending_fallback(products, n)

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#1e293b"/>
+  <!-- Shopping bag body -->
+  <rect x="155" y="120" width="90" height="80" rx="6" fill="#334155"/>
+  <!-- Shopping bag handle -->
+  <path d="M175 120 Q175 95 200 95 Q225 95 225 120" stroke="#475569" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Label line -->
+  <rect x="170" y="145" width="60" height="4" rx="2" fill="#475569"/>
+  <rect x="178" y="158" width="44" height="4" rx="2" fill="#475569"/>
+  <!-- Caption -->
+  <text x="200" y="235" text-anchor="middle" fill="#475569" font-size="13" font-family="system-ui, -apple-system, sans-serif">Image not available</text>
+</svg>

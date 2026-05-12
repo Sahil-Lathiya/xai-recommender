@@ -1,6 +1,9 @@
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Star, Zap, ExternalLink } from 'lucide-react'
+import { Star, Zap } from 'lucide-react'
 import { clsx } from 'clsx'
+import useAppStore from '../../store/appStore'
+import { trackInteraction } from '../../services/api'
 
 const CATEGORY_COLORS = {
   Electronics: 'bg-cyan-400/15 text-cyan-400 border-cyan-400/30',
@@ -14,10 +17,6 @@ const CATEGORY_EMOJI = {
   Books:       '📚',
   Clothing:    '👗',
   Home:        '🏠',
-}
-
-function amazonUrl(product) {
-  return product.amazon_url || `https://www.amazon.co.uk/s?k=${encodeURIComponent(product.name)}`
 }
 
 function StarRating({ rating }) {
@@ -58,12 +57,40 @@ export default function ProductCard({ recommendation, onExplain }) {
   const { product, score, confidence_score, top_reason, recommendation_id } =
     recommendation
 
+  const loggedInUser = useAppStore((s) => s.loggedInUser)
+  const currentUser  = useAppStore((s) => s.currentUser)
+  const accessToken  = useAppStore((s) => s.accessToken)
+
+  // Resolve active user: prefer logged-in user, fall back to demo selector
+  const userId = loggedInUser?.user_id ?? currentUser?.id ?? null
+  const token  = accessToken ?? null
+
+  // Track view on mount
+  useEffect(() => {
+    if (userId && product?.id) {
+      trackInteraction(userId, product.id, 'view', token)
+    }
+  }, [product?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const categoryColor =
     CATEGORY_COLORS[product.category] ||
     'bg-slate-600/20 text-slate-400 border-slate-600/30'
 
   const fallbackEmoji = CATEGORY_EMOJI[product.category] || '📦'
-  const url = amazonUrl(product)
+  const amazonUrl = product.amazon_url || null
+
+  function handleWhyClick() {
+    onExplain(recommendation_id, product.id)
+    if (userId && product?.id) {
+      trackInteraction(userId, product.id, 'click', token)
+    }
+  }
+
+  function handleBuyClick() {
+    if (userId && product?.id) {
+      trackInteraction(userId, product.id, 'click', token)
+    }
+  }
 
   return (
     <motion.div
@@ -73,32 +100,22 @@ export default function ProductCard({ recommendation, onExplain }) {
       whileHover={{ y: -4, boxShadow: '0 8px 32px -4px rgba(0,180,216,0.15)' }}
       transition={{ duration: 0.25 }}
     >
-      {/* Product image — clickable → Amazon */}
-      <a href={url} target="_blank" rel="noopener noreferrer" className="block">
-        <div className="relative w-full h-44 overflow-hidden rounded-lg bg-slate-700 dark:bg-slate-700">
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt={product.name}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-              onError={(e) => {
-                e.target.style.display = 'none'
-                e.target.nextSibling.style.display = 'flex'
-              }}
-            />
-          ) : null}
-          <div
-            className="w-full h-full flex items-center justify-center text-5xl"
-            style={{ display: product.image_url ? 'none' : 'flex' }}
-          >
-            {fallbackEmoji}
-          </div>
-          <div className="absolute top-2 right-2">
-            <ConfidencePill score={confidence_score} />
-          </div>
+      {/* Product image */}
+      <div className="relative w-full h-44 overflow-hidden rounded-lg bg-slate-700 dark:bg-slate-700">
+        <img
+          src={product.image_url || '/placeholder-product.svg'}
+          alt={product.name}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          onError={(e) => {
+            e.target.onerror = null
+            e.target.src = '/placeholder-product.svg'
+          }}
+        />
+        <div className="absolute top-2 right-2">
+          <ConfidencePill score={confidence_score} />
         </div>
-      </a>
+      </div>
 
       {/* Category + price */}
       <div className="flex items-center justify-between">
@@ -106,25 +123,20 @@ export default function ProductCard({ recommendation, onExplain }) {
           {product.category}
         </span>
         <span className="text-slate-100 font-bold text-lg">
-          £{product.price.toFixed(2)}
+          £{product.price != null ? product.price.toFixed(2) : 'N/A'}
         </span>
       </div>
 
-      {/* Name — clickable → Amazon */}
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-slate-100 font-semibold text-sm leading-snug line-clamp-2 hover:text-cyan-400 transition-colors"
-      >
+      {/* Product name */}
+      <p className="text-slate-100 font-semibold text-sm leading-snug line-clamp-2">
         {product.name}
-      </a>
+      </p>
 
       {/* Rating + review count */}
       <div className="flex items-center justify-between">
         <StarRating rating={product.rating} />
         <span className="text-slate-500 text-xs">
-          {product.review_count.toLocaleString()} reviews
+          {product.review_count?.toLocaleString()} reviews
         </span>
       </div>
 
@@ -137,8 +149,9 @@ export default function ProductCard({ recommendation, onExplain }) {
 
       {/* Action row */}
       <div className="mt-auto flex flex-col gap-2">
+        {/* Why Recommended? */}
         <motion.button
-          onClick={() => onExplain(recommendation_id, product.id)}
+          onClick={handleWhyClick}
           className="flex items-center justify-center gap-2 w-full py-2 rounded-lg
                      bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm font-medium
                      hover:bg-cyan-400/20 hover:border-cyan-400/60 transition-colors duration-200"
@@ -148,17 +161,20 @@ export default function ProductCard({ recommendation, onExplain }) {
           Why Recommended?
         </motion.button>
 
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg
-                     text-slate-500 hover:text-slate-300 text-xs transition-colors
-                     border border-slate-700/50 hover:border-slate-600"
-        >
-          View on Amazon
-          <ExternalLink size={11} />
-        </a>
+        {/* Buy on Amazon — only shown if URL exists */}
+        {amazonUrl && (
+          <a
+            href={amazonUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleBuyClick}
+            className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg
+                       text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#FF9900' }}
+          >
+            Buy on Amazon ↗
+          </a>
+        )}
       </div>
     </motion.div>
   )
