@@ -7,8 +7,9 @@ Manual refresh: POST /api/v1/admin/refresh-products
 Image strategy: use picsum.photos/seed/{asin}/400/400
   Amazon CDN (m.media-amazon.com) blocks cross-origin loads — never store those URLs.
 
-Amazon URL: https://www.amazon.co.uk/s?k={encoded_name}&tag=xairecommende-21
-  Never use /dp/{asin} — ASINs are US-based and 404 on the UK site.
+Amazon URL strategy: use /dp/{asin}?tag=xairecommende-21 when Scavio returns an ASIN.
+  Scavio is called with domain="co.uk" so ASINs are UK marketplace ASINs — /dp/ links work.
+  Fallback to s?k= search URL only when ASIN is missing.
 """
 import asyncio
 import logging
@@ -150,12 +151,18 @@ async def fetch_and_upsert_products() -> None:
 
                         # Deterministic image: same ASIN → same image every time
                         image_url = f"https://picsum.photos/seed/{asin}/400/400"
-                        # Search URL — never /dp/{asin} which 404s for US ASINs on UK site
-                        search_q  = urllib.parse.quote_plus(name[:80])
-                        amazon_url = (
-                            f"https://www.amazon.co.uk/s?k={search_q}"
-                            f"&tag={settings.AMAZON_ASSOCIATE_ID}"
-                        )
+                        # Direct product URL — Scavio domain:co.uk returns UK ASINs
+                        if asin:
+                            amazon_url = (
+                                f"https://www.amazon.co.uk/dp/{asin}"
+                                f"?tag={settings.AMAZON_ASSOCIATE_ID}"
+                            )
+                        else:
+                            search_q = urllib.parse.quote_plus(name[:80])
+                            amazon_url = (
+                                f"https://www.amazon.co.uk/s?k={search_q}"
+                                f"&tag={settings.AMAZON_ASSOCIATE_ID}"
+                            )
 
                         name_key = name.lower()
                         # Reuse existing id so the upsert updates rather than duplicates

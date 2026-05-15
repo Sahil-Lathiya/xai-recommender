@@ -91,13 +91,11 @@ export default function Navbar() {
           <XAILogo />
         </Link>
 
-        {/* Centre nav — only when logged in */}
-        {loggedInUser && (
-          <div className="flex items-center gap-1">
-            {navLink('/', 'Recommendations')}
-            {navLink('/dashboard', 'Admin Panel')}
-          </div>
-        )}
+        {/* Centre nav — Recommendations only when logged in; Admin Panel always visible */}
+        <div className="flex items-center gap-1">
+          {loggedInUser && navLink('/', 'Recommendations')}
+          {navLink('/dashboard', 'Admin Panel')}
+        </div>
 
         {/* Right actions */}
         <div className="flex items-center gap-2">

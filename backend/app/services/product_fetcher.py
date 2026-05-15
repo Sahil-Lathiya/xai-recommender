@@ -158,6 +158,9 @@ async def fetch_and_upsert_products() -> None:
                         query, category, exc,
                     )
 
+                # Respect Scavio rate limits — 1 req/s is safe for free tier
+                await asyncio.sleep(1.0)
+
     if not new_rows:
         logger.info("Scavio fetch complete — no new products to insert")
         return
