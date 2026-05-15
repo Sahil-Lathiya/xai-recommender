@@ -79,8 +79,6 @@ export default function Navbar() {
     </Link>
   )
 
-  const isAdmin = loggedInUser?.email === 'admin@xairecommender.me'
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16
                     bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm
@@ -97,7 +95,7 @@ export default function Navbar() {
         {loggedInUser && (
           <div className="flex items-center gap-1">
             {navLink('/', 'Recommendations')}
-            {isAdmin && navLink('/dashboard', 'Admin Panel')}
+            {navLink('/dashboard', 'Admin Panel')}
           </div>
         )}
 

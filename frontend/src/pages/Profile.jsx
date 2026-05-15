@@ -315,9 +315,9 @@ export default function Profile() {
         {profile.recent_explorations.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-4xl mb-3">🔍</p>
-            <p className="text-slate-600 dark:text-slate-400 font-medium text-sm">No explorations yet</p>
+            <p className="text-slate-600 dark:text-slate-400 font-medium text-sm">No activity yet</p>
             <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 max-w-xs mx-auto">
-              Browse recommendations to start building your history
+              Click &quot;Why Recommended?&quot; or &quot;Buy on Amazon&quot; on any product to start your history
             </p>
           </div>
         ) : (

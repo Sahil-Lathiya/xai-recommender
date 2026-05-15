@@ -1,9 +1,8 @@
-import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Zap } from 'lucide-react'
 import { clsx } from 'clsx'
 import useAppStore from '../../store/appStore'
-import { trackInteraction } from '../../services/api'
+import { useTrackAndRefresh } from '../../hooks/useTrackAndRefresh'
 
 const CATEGORY_COLORS = {
   Electronics: 'bg-cyan-400/15 text-cyan-400 border-cyan-400/30',
@@ -65,12 +64,7 @@ export default function ProductCard({ recommendation, onExplain }) {
   const userId = loggedInUser?.user_id ?? currentUser?.id ?? null
   const token  = accessToken ?? null
 
-  // Track view on mount
-  useEffect(() => {
-    if (userId && product?.id) {
-      trackInteraction(userId, product.id, 'view', token)
-    }
-  }, [product?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const trackAndRefresh = useTrackAndRefresh(userId, token)
 
   const categoryColor =
     CATEGORY_COLORS[product.category] ||
@@ -81,15 +75,11 @@ export default function ProductCard({ recommendation, onExplain }) {
 
   function handleWhyClick() {
     onExplain(recommendation_id, product.id)
-    if (userId && product?.id) {
-      trackInteraction(userId, product.id, 'click', token)
-    }
+    trackAndRefresh(product.id, 'click')
   }
 
   function handleBuyClick() {
-    if (userId && product?.id) {
-      trackInteraction(userId, product.id, 'click', token)
-    }
+    trackAndRefresh(product.id, 'click')
   }
 
   return (

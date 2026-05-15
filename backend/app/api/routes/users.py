@@ -186,9 +186,12 @@ async def get_user_profile_detail(
             UserInteraction.timestamp,
         )
         .join(Product, Product.id == UserInteraction.product_id)
-        .where(UserInteraction.user_id == user_id)
+        .where(
+            UserInteraction.user_id == user_id,
+            UserInteraction.action_type.in_(["click", "purchase", "rate"]),
+        )
         .order_by(UserInteraction.timestamp.desc())
-        .limit(10)
+        .limit(4)
     )
     recent_explorations = [
         RecentExplorationItem(

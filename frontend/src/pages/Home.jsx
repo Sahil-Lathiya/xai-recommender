@@ -1,3 +1,4 @@
+import { Component } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -7,6 +8,33 @@ import SkeletonCard from '../components/ProductCard/SkeletonCard'
 import ExplanationPanel from '../components/ExplanationPanel/ExplanationPanel'
 import useAppStore, { DEMO_USERS } from '../store/appStore'
 import { recordInteraction } from '../services/api'
+
+class ProductCardErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error) {
+    console.warn('[ProductCard] render error caught by boundary:', error?.message)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="card p-5 flex flex-col items-center justify-center gap-2 min-h-[260px] text-slate-500">
+          <AlertCircle size={24} className="text-slate-600" />
+          <p className="text-xs text-center">Product unavailable</p>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const PAGE_VARIANTS = {
   hidden: { opacity: 0, y: 20 },
@@ -171,10 +199,12 @@ function RecommendationGrid({ userId }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.07 }}
                 >
-                  <ProductCard
-                    recommendation={rec}
-                    onExplain={handleExplain}
-                  />
+                  <ProductCardErrorBoundary>
+                    <ProductCard
+                      recommendation={rec}
+                      onExplain={handleExplain}
+                    />
+                  </ProductCardErrorBoundary>
                 </motion.div>
               ))}
         </AnimatePresence>
