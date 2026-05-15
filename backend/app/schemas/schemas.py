@@ -182,11 +182,13 @@ class ModelPerformanceResponse(BaseModel):
 # ── Profile Detail ─────────────────────────────────────────────────────────────
 
 class RecentExplorationItem(BaseModel):
-    recommendation_id: uuid.UUID
+    id: uuid.UUID            # interaction UUID
     product_name: str
     product_category: str
     image_url: Optional[str]
-    viewed_at: datetime
+    amazon_url: Optional[str] = None
+    action_type: str
+    timestamp: datetime
 
 
 class UserProfileDetailResponse(BaseModel):

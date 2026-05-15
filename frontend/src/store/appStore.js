@@ -34,6 +34,7 @@ const useAppStore = create(
       demoUsers: DEMO_USERS,
       loggedInUser: null,
       accessToken: null,
+      isAdminAuthenticated: false,
 
       setCurrentUser: (user) =>
         set({ currentUser: user, openExplanationId: null }),
@@ -51,7 +52,10 @@ const useAppStore = create(
         set({ loggedInUser: { ...user }, accessToken: token }),
 
       logout: () =>
-        set({ loggedInUser: null, accessToken: null }),
+        set({ loggedInUser: null, accessToken: null, isAdminAuthenticated: false }),
+
+      setAdminAuthenticated: (val) =>
+        set({ isAdminAuthenticated: val }),
     }),
     {
       name: 'xai-app-store',
@@ -59,6 +63,7 @@ const useAppStore = create(
         darkMode: s.darkMode,
         loggedInUser: s.loggedInUser,
         accessToken: s.accessToken,
+        // isAdminAuthenticated intentionally omitted — session-only security gate
       }),
     }
   )

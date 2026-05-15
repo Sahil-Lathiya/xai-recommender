@@ -33,6 +33,25 @@ function formatDate(dateStr) {
   })
 }
 
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const seconds = Math.floor((Date.now() - new Date(dateStr)) / 1000)
+  if (seconds < 60)  return 'just now'
+  const mins = Math.floor(seconds / 60)
+  if (mins < 60)     return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24)    return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+const ACTION_LABELS = {
+  view:     { label: 'Viewed',   color: 'bg-slate-600/20 text-slate-400 border-slate-600/30' },
+  click:    { label: 'Explored', color: 'bg-cyan-400/15 text-cyan-400 border-cyan-400/30' },
+  purchase: { label: 'Bought',   color: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/30' },
+  rate:     { label: 'Rated',    color: 'bg-amber-400/15 text-amber-400 border-amber-400/30' },
+}
+
 function getInitials(name) {
   if (!name) return '?'
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -298,39 +317,77 @@ export default function Profile() {
             <p className="text-4xl mb-3">🔍</p>
             <p className="text-slate-600 dark:text-slate-400 font-medium text-sm">No explorations yet</p>
             <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 max-w-xs mx-auto">
-              Click "Why Recommended?" on any product card to start building your history
+              Browse recommendations to start building your history
             </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {profile.recent_explorations.map((item, i) => (
-              <motion.div
-                key={item.recommendation_id}
-                className="flex items-center gap-3 p-3 rounded-lg
-                           bg-slate-50 dark:bg-slate-800/40
-                           border border-slate-200 dark:border-slate-700/30"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-              >
-                <span className="text-xl flex-shrink-0">
-                  {CATEGORY_EMOJI[item.product_category] || '📦'}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">
-                    {item.product_name}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`badge border text-xs ${CATEGORY_COLORS[item.product_category] || 'bg-slate-600/20 text-slate-400 border-slate-600/30'}`}>
-                      {item.product_category}
-                    </span>
-                    <span className="text-slate-400 dark:text-slate-500 text-xs">
-                      {formatDate(item.viewed_at)}
-                    </span>
+            {profile.recent_explorations.map((item, i) => {
+              const action = ACTION_LABELS[item.action_type] || ACTION_LABELS.view
+              return (
+                <motion.div
+                  key={item.id}
+                  className="flex items-center gap-3 p-3 rounded-lg
+                             bg-slate-50 dark:bg-slate-800/40
+                             border border-slate-200 dark:border-slate-700/30"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  {/* Thumbnail */}
+                  <div className="w-11 h-11 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.product_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null
+                          e.target.style.display = 'none'
+                          e.target.parentNode.textContent = CATEGORY_EMOJI[item.product_category] || '📦'
+                        }}
+                      />
+                    ) : (
+                      <span className="w-full h-full flex items-center justify-center text-lg">
+                        {CATEGORY_EMOJI[item.product_category] || '📦'}
+                      </span>
+                    )}
                   </div>
-                </div>
-              </motion.div>
-            ))}
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-900 dark:text-slate-100 text-sm font-medium truncate">
+                      {item.product_name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className={`badge border text-xs ${CATEGORY_COLORS[item.product_category] || 'bg-slate-600/20 text-slate-400 border-slate-600/30'}`}>
+                        {item.product_category}
+                      </span>
+                      <span className={`badge border text-xs ${action.color}`}>
+                        {action.label}
+                      </span>
+                      <span className="text-slate-400 dark:text-slate-500 text-xs">
+                        {timeAgo(item.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Buy link */}
+                  {item.amazon_url && (
+                    <a
+                      href={item.amazon_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 px-2.5 py-1 text-xs font-semibold text-white rounded-md
+                                 hover:opacity-90 transition-opacity"
+                      style={{ backgroundColor: '#FF9900' }}
+                    >
+                      Buy ↗
+                    </a>
+                  )}
+                </motion.div>
+              )
+            })}
           </div>
         )}
       </div>

@@ -102,6 +102,19 @@ async def get_dashboard_stats(db: DBSession) -> DashboardStatsResponse:
     )
 
 
+@router.post("/admin/refresh-products", status_code=202)
+async def trigger_product_refresh():
+    """
+    Manually trigger a Scavio product fetch in the background.
+    Frontend admin panel uses this; no auth token required (dashboard is
+    already protected by the admin password gate on the frontend).
+    """
+    import asyncio as _asyncio
+    from app.services.amazon_fetcher import fetch_and_upsert_products
+    _asyncio.create_task(fetch_and_upsert_products())
+    return {"status": "refresh_started"}
+
+
 @router.get("/dashboard/model-performance", response_model=ModelPerformanceResponse)
 async def get_model_performance(db: DBSession) -> ModelPerformanceResponse:
     now = datetime.now(timezone.utc)

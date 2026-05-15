@@ -6,8 +6,7 @@ from sqlalchemy import func, select
 
 from app.api.deps import DBSession
 from app.core.security import create_access_token, hash_password, verify_password
-from app.db.models import Product, User, UserInteraction
-from app.db.models import Explanation, Recommendation
+from app.db.models import Product, Recommendation, User, UserInteraction
 from app.schemas.schemas import (
     InteractionRequest,
     InteractionResponse,
@@ -178,25 +177,28 @@ async def get_user_profile_detail(
 
     recent_result = await db.execute(
         select(
-            Explanation.recommendation_id,
+            UserInteraction.id,
             Product.name,
             Product.category,
             Product.image_url,
-            Explanation.created_at,
+            Product.amazon_url,
+            UserInteraction.action_type,
+            UserInteraction.timestamp,
         )
-        .join(Recommendation, Recommendation.id == Explanation.recommendation_id)
-        .join(Product, Product.id == Recommendation.product_id)
-        .where(Recommendation.user_id == user_id)
-        .order_by(Explanation.created_at.desc())
-        .limit(5)
+        .join(Product, Product.id == UserInteraction.product_id)
+        .where(UserInteraction.user_id == user_id)
+        .order_by(UserInteraction.timestamp.desc())
+        .limit(10)
     )
     recent_explorations = [
         RecentExplorationItem(
-            recommendation_id=row[0],
+            id=row[0],
             product_name=row[1],
             product_category=row[2],
             image_url=row[3],
-            viewed_at=row[4],
+            amazon_url=row[4],
+            action_type=row[5],
+            timestamp=row[6],
         )
         for row in recent_result.all()
     ]

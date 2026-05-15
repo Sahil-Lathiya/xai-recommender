@@ -5,10 +5,10 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select, text
 
 from app.api.deps import DBSession
-from app.db.models import Product, Recommendation, User
+from app.db.models import Product, Recommendation, User, UserInteraction
 from app.ml.cache import recommendation_cache
 from app.ml.recommender import model_manager
 from app.ml.xai_engine import xai_engine
@@ -75,6 +75,83 @@ def _card_reason(product: dict, user_stats: dict, is_new_user: bool) -> str:
     return f"{rating}★ rated · {reviews:,} reviews in {cat}"
 
 
+async def _cold_start_response(
+    request: RecommendationRequest,
+    db: DBSession,
+    start: float,
+) -> RecommendationResponse:
+    """
+    Return popularity-ranked products for users with < 5 interactions.
+    Bypasses XGBoost entirely — no feature vectors, no SHAP.
+    Products are selected per-category so the feed is diverse.
+    """
+    CATEGORIES = ["Electronics", "Books", "Clothing", "Home"]
+    items: list[RecommendationItem] = []
+    seen_ids: set = set()
+
+    for cat in CATEGORIES:
+        if len(items) >= request.limit:
+            break
+
+        # Skip category if a filter is active and doesn't match
+        if request.category_filter and request.category_filter != cat:
+            continue
+
+        cat_result = await db.execute(
+            select(Product)
+            .where(
+                Product.category == cat,
+                Product.image_url.isnot(None),
+                Product.amazon_url.isnot(None),
+            )
+            .order_by(text("rating * ln(1 + review_count) DESC"))
+            .limit(5)
+        )
+        cat_products = cat_result.scalars().all()
+
+        for product in cat_products:
+            if len(items) >= request.limit:
+                break
+            if product.id in seen_ids:
+                continue
+            seen_ids.add(product.id)
+
+            rec_id      = uuid.uuid4()
+            pop_score   = product.rating * math.log1p(product.review_count)
+            normalised  = round(min(1.0, pop_score / 55.0), 4)
+
+            items.append(
+                RecommendationItem(
+                    recommendation_id=rec_id,
+                    product=ProductResponse(
+                        id=product.id,
+                        name=product.name,
+                        category=product.category,
+                        price=product.price,
+                        rating=product.rating,
+                        review_count=product.review_count,
+                        image_url=product.image_url,
+                        amazon_url=product.amazon_url,
+                    ),
+                    score=normalised,
+                    confidence_score=50,
+                    top_reason=(
+                        f"Trending — {product.rating}★ rated by "
+                        f"{product.review_count:,} buyers"
+                    ),
+                )
+            )
+
+    elapsed_ms = int((time.perf_counter() - start) * 1000)
+    return RecommendationResponse(
+        user_id=request.user_id,
+        recommendations=items,
+        cached=False,
+        response_time_ms=elapsed_ms,
+        is_new_user=True,
+    )
+
+
 @router.post(
     "/recommendations",
     response_model=RecommendationResponse,
@@ -93,6 +170,18 @@ async def get_recommendations(
             detail="User not found",
         )
 
+    # ── Cold-start check: bypass ML for users with < 5 interactions ──────────
+    count_result = await db.execute(
+        select(func.count(UserInteraction.id)).where(
+            UserInteraction.user_id == request.user_id
+        )
+    )
+    interaction_count = count_result.scalar_one() or 0
+
+    if interaction_count < 5:
+        return await _cold_start_response(request, db, start)
+
+    # ── Normal ML path (>= 5 interactions) ───────────────────────────────────
     cache_key = f"rec:{request.user_id}:{request.limit}:{request.category_filter or 'all'}"
     was_cached = cache_key in recommendation_cache
 

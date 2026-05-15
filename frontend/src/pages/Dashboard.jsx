@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Activity, Users, BarChart3, DollarSign,
-  Loader2, AlertCircle, ShieldAlert, ArrowLeft,
+  Loader2, AlertCircle, ArrowLeft, Lock, LogOut,
 } from 'lucide-react'
 import {
   getDashboardStats,
@@ -17,8 +18,11 @@ import RecommendationsOverTime from '../components/Charts/RecommendationsOverTim
 import CategoryPie from '../components/Charts/CategoryPie'
 import useAppStore from '../store/appStore'
 
+const ADMIN_EMAIL    = 'admin@xairecommender.me'
+const ADMIN_PASSWORD = 'XaiAdmin2026!'
+
 const PAGE_VARIANTS = {
-  hidden: { opacity: 0, y: 20 },
+  hidden:  { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 }
 
@@ -52,7 +56,26 @@ function ErrorState({ message }) {
   )
 }
 
-function AdminRequired() {
+function AdminLoginForm({ onAuthenticated }) {
+  const [email, setEmail]       = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setTimeout(() => {
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        onAuthenticated()
+      } else {
+        setError('Invalid admin credentials')
+      }
+      setLoading(false)
+    }, 350)
+  }
+
   return (
     <motion.div
       className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4"
@@ -60,61 +83,144 @@ function AdminRequired() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="text-center max-w-sm">
-        <div className="w-16 h-16 rounded-full bg-amber-400/10 border border-amber-400/20
-                        flex items-center justify-center mx-auto mb-5">
-          <ShieldAlert size={30} className="text-amber-400" />
+      <div className="w-full max-w-sm">
+        <div className="w-14 h-14 rounded-2xl bg-amber-400/10 border border-amber-400/20
+                        flex items-center justify-center mx-auto mb-6">
+          <Lock size={26} className="text-amber-400" />
         </div>
-        <h1 className="text-xl font-bold text-slate-100 mb-2">
-          Admin Access Required
+
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 text-center mb-1">
+          Admin Panel
         </h1>
-        <p className="text-slate-400 text-sm leading-relaxed mb-6">
-          The dashboard contains system metrics, model performance data, and
-          API cost information restricted to administrators only.
+        <p className="text-slate-500 dark:text-slate-400 text-sm text-center mb-8">
+          System metrics · admin access only
         </p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 btn-primary"
-        >
-          <ArrowLeft size={15} />
-          Back to Recommendations
-        </Link>
+
+        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
+          <div>
+            <label className="block text-slate-600 dark:text-slate-400 text-xs font-medium mb-1.5">
+              Admin email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@xairecommender.me"
+              required
+              autoComplete="username"
+              className="w-full px-3 py-2.5 rounded-lg text-sm
+                         bg-slate-50 dark:bg-slate-800/60
+                         border border-slate-200 dark:border-slate-700
+                         text-slate-900 dark:text-slate-100
+                         placeholder-slate-400 dark:placeholder-slate-600
+                         focus:outline-none focus:ring-2 focus:ring-amber-400/40
+                         transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-600 dark:text-slate-400 text-xs font-medium mb-1.5">
+              Admin password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+              autoComplete="current-password"
+              className="w-full px-3 py-2.5 rounded-lg text-sm
+                         bg-slate-50 dark:bg-slate-800/60
+                         border border-slate-200 dark:border-slate-700
+                         text-slate-900 dark:text-slate-100
+                         placeholder-slate-400 dark:placeholder-slate-600
+                         focus:outline-none focus:ring-2 focus:ring-amber-400/40
+                         transition-colors"
+            />
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-lg
+                         bg-red-400/10 border border-red-400/20"
+            >
+              <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
+              <p className="text-red-400 text-xs">{error}</p>
+            </motion.div>
+          )}
+
+          <motion.button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 rounded-lg text-sm font-semibold
+                       bg-amber-400 hover:bg-amber-300 text-slate-900
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       transition-colors duration-200"
+            whileTap={{ scale: 0.98 }}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 size={14} className="animate-spin" />
+                Verifying…
+              </span>
+            ) : 'Admin Login'}
+          </motion.button>
+        </form>
+
+        <div className="mt-5 text-center">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-slate-400
+                       hover:text-slate-600 dark:hover:text-slate-300 text-sm transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Back to Recommendations
+          </Link>
+        </div>
       </div>
     </motion.div>
   )
 }
 
 export default function Dashboard() {
-  const loggedInUser = useAppStore((s) => s.loggedInUser)
+  const isAdminAuthenticated = useAppStore((s) => s.isAdminAuthenticated)
+  const setAdminAuthenticated = useAppStore((s) => s.setAdminAuthenticated)
 
-  if (!loggedInUser?.is_admin) {
-    return <AdminRequired />
-  }
-
+  // Always call hooks at the top — React rules of hooks.
+  // enabled: false prevents fetching until authenticated.
   const stats = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: getDashboardStats,
     refetchInterval: 30_000,
+    enabled: isAdminAuthenticated,
   })
 
   const performance = useQuery({
     queryKey: ['model-performance'],
     queryFn: getModelPerformance,
     staleTime: 60_000,
+    enabled: isAdminAuthenticated,
   })
 
   const importance = useQuery({
     queryKey: ['global-feature-importance'],
     queryFn: getGlobalFeatureImportance,
     staleTime: 3_600_000,
+    enabled: isAdminAuthenticated,
   })
 
-  if (stats.isLoading) return <LoadingState />
-  if (stats.isError) return <ErrorState message={stats.error?.message} />
+  if (!isAdminAuthenticated) {
+    return <AdminLoginForm onAuthenticated={() => setAdminAuthenticated(true)} />
+  }
 
-  const s = stats.data || {}
+  if (stats.isLoading) return <LoadingState />
+  if (stats.isError)   return <ErrorState message={stats.error?.message} />
+
+  const s   = stats.data      || {}
   const perf = performance.data || {}
-  const imp = importance.data || {}
+  const imp  = importance.data  || {}
 
   return (
     <motion.div
@@ -124,16 +230,27 @@ export default function Dashboard() {
       animate="visible"
     >
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold text-slate-100">Live Dashboard</h1>
-          <span className="badge bg-amber-400/10 text-amber-400 border border-amber-400/20 text-xs">
-            Admin View — System Metrics
-          </span>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-2xl font-bold text-slate-100">Live Dashboard</h1>
+            <span className="badge bg-amber-400/10 text-amber-400 border border-amber-400/20 text-xs">
+              Admin View — System Metrics
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm mt-1">
+            Real-time system metrics · auto-refreshes every 30s
+          </p>
         </div>
-        <p className="text-slate-400 text-sm mt-1">
-          Real-time system metrics · auto-refreshes every 30s
-        </p>
+        <button
+          onClick={() => setAdminAuthenticated(false)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-400
+                     hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+          title="Exit admin panel"
+        >
+          <LogOut size={14} />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
       </div>
 
       {/* KPI row */}
